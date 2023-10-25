@@ -3,6 +3,7 @@ pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "solmate/tokens/ERC20.sol";
+import "forge-std/console.sol"; 
 import { TradingCenter, IERC20 } from "../src/TradingCenter.sol";
 import { TradingCenterV2 } from "../src/TradingCenterV2.sol";
 import { UpgradeableProxy } from "../src/UpgradeableProxy.sol";
@@ -24,6 +25,7 @@ contract TradingCenterTest is Test {
   UpgradeableProxy proxy;
   IERC20 usdt;
   IERC20 usdc;
+  TradingCenterV2 tradingCenterV2;
 
   // Initial balances
   uint256 initialBalance = 100000 ether;
@@ -73,19 +75,37 @@ contract TradingCenterTest is Test {
   function testUpgrade() public {
     // TODO:
     // Let's pretend that you are proxy owner
+    vm.startPrank(owner);
     // Try to upgrade the proxy to TradingCenterV2
+    tradingCenterV2 = new TradingCenterV2();
+    proxy.upgradeTo(address(tradingCenterV2));
+    
     // And check if all state are correct (initialized, usdt address, usdc address)
     assertEq(proxyTradingCenter.initialized(), true);
     assertEq(address(proxyTradingCenter.usdc()), address(usdc));
     assertEq(address(proxyTradingCenter.usdt()), address(usdt));
+
+    vm.stopPrank();
   }
 
   function testRugPull() public {
 
     // TODO: 
     // Let's pretend that you are proxy owner
+    vm.startPrank(owner);
+
     // Try to upgrade the proxy to TradingCenterV2
+    tradingCenterV2 = new TradingCenterV2();
+    proxy.upgradeTo(address(tradingCenterV2));
+    vm.stopPrank();
+
     // And empty users' usdc and usdt
+    vm.startPrank(user1);
+    proxyTradingCenter.exchange(usdt, 1);
+    vm.stopPrank();
+    vm.startPrank(user2);
+    proxyTradingCenter.exchange(usdc, 1);
+    vm.stopPrank();
 
     // Assert users's balances are 0
     assertEq(usdt.balanceOf(user1), 0);
